@@ -1,53 +1,51 @@
-#include<sys/types.h> 
-#include<sys/socket.h> 
-#include<stdio.h> 
-#include<unistd.h> 
-#include<string.h> 
+#include<sys/socket.h>
+#include<stdio.h>
 #include<stdlib.h>
-#include<netinet/in.h> 
-#include<netdb.h> 
-int main(int argc,char*argv[]) 
-{ 
-int sd; 
-char buff[1024]; 
-struct sockaddr_in servaddr; 
-socklen_t len; 
-len=sizeof(servaddr); 
- /*UDP socket is created, an Internet socket address structure is filled with 
- wildcard address & server’s well known port*/ 
-sd = socket(AF_INET,SOCK_DGRAM,0); 
-if(sd<0) 
-{ 
-perror("Cannot open socket"); 
-exit(1); 
-} 
-bzero(&servaddr,len); 
-/*Socket address structure*/ 
-servaddr.sin_family=AF_INET; 
-servaddr.sin_addr.s_addr=htonl(INADDR_ANY); 
-servaddr.sin_port=htons(5669); 
-while(1) 
-{ 
-printf("Enter Input data : \n"); 
-bzero(buff,sizeof(buff)); 
- /*Reads the message from standard input*/ 
-fgets(buff,sizeof (buff),stdin); 
- /*sendto is used to transmit the request message to the server*/ 
-if(sendto (sd,buff,sizeof (buff),0,(struct sockaddr*)&servaddr,len)<0) 
- { 
- perror("Cannot send data"); 
- exit(1); 
- } 
-printf("Data sent to UDP Server:%s",buff); 
-bzero(buff,sizeof(buff)); 
-/*Receiving the echoed message from server*/
-if(recvfrom (sd,buff,sizeof(buff),0,(struct sockaddr*)&servaddr,&len)<0) 
- { 
- perror("Cannot receive data"); 
- exit(1); 
- } 
-printf("Received Data from server: %s",buff); 
- } 
-close(sd); 
-return 0; 
+#include<unistd.h>
+#include<string.h>
+#include<netinet/in.h>
+#include<netdb.h>
+#include<arpa/inet.h>
+#include<sys/types.h>
+#define PORT 8080
+#define MAX_BUFFER_SIZE 1024
+
+int main() {
+    int client_fd;
+    struct sockaddr_in server_addr;
+    char buffer[MAX_BUFFER_SIZE];
+
+    // Create socket file descriptor
+    if ((client_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+        perror("Socket creation error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set up sockaddr_in structure for server
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
+        perror("Invalid address/ Address not supported");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        // Send data to the server
+        printf("Client: ");
+        fgets(buffer, MAX_BUFFER_SIZE, stdin);
+        sendto(client_fd, buffer, strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+	bzero(buffer,sizeof(buffer));
+        // Receive data from the server
+        if (recvfrom(client_fd, buffer, MAX_BUFFER_SIZE, 0, NULL, NULL) == -1) {
+            perror("Receive failed");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Server: %s", buffer);
+    }
+
+    close(client_fd);
+    return 0;
 }
