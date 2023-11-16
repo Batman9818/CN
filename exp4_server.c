@@ -7,64 +7,50 @@
 #include<netdb.h>
 #include<arpa/inet.h>
 #include<sys/types.h>
+#define PORT 8080
+#define MAX_BUFFER_SIZE 1024
 
-int main(int argc,char *argv[])
-{
-    int sd;
-    char buff[1024];
-    struct sockaddr_in cliaddr,servaddr;
-    socklen_t clilen;
-    clilen=sizeof(cliaddr);
-   
-    /*UDP socket is created, an Internet socket address structure is filled with wildcard
-    address & server’s well known port*/
-   
-    sd=socket(AF_INET,SOCK_DGRAM,0);
-    if (sd<0)
-    {
-        perror ("Cannot open Socket");
-        exit(1);
+int main() {
+    int server_fd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    char buffer[MAX_BUFFER_SIZE];
+
+    // Create socket file descriptor
+    if ((server_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
     }
-   
-    bzero(&servaddr,sizeof(servaddr));
-   
-    /*Socket address structure*/
-    servaddr.sin_family=AF_INET;
-    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
-    servaddr.sin_port=htons(5669);
-   
-    /*Bind function assigns a local protocol address to the socket*/
-    if(bind(sd,(struct sockaddr*)&servaddr,sizeof(servaddr))<0)
-    {
-        perror("error in binding the port");
-        exit(1);
+
+    // Set up sockaddr_in structure for server
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    // Bind the socket to localhost:8080
+    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
     }
-   
-    printf("%s","Server is Running…\n");
-   
-    while(1)
-    {
-        bzero(&buff,sizeof(buff));
-       
-        /*Read the message from the client*/
-        if(recvfrom(sd,buff,sizeof(buff),0,(struct sockaddr*)&cliaddr,&clilen)<0)
-        {
-            perror("Cannot rec data");
-            exit(1);
+
+    printf("Server listening on port %d\n", PORT);
+
+    while (1) {
+    	bzero(buffer,sizeof(buffer));
+        // Receive data from the client
+        if (recvfrom(server_fd, buffer, MAX_BUFFER_SIZE, 0, (struct sockaddr*)&client_addr, &addr_len) == -1) {
+            perror("Receive failed");
+            exit(EXIT_FAILURE);
         }
-       
-        printf("Message is received: %s\n", buff);
-       
-        /*Sendto function is used to echo the message from server to client side*/
-        if(sendto(sd,buff,sizeof(buff),0,(struct sockaddr*)&cliaddr,clilen)<0)
-        {
-            perror("Cannot send data to client");
-            exit(1);
-        }
-       
-        printf("Send data to UDP Client: %s",buff);
+
+        printf("Client: %s", buffer);
+	bzero(buffer,sizeof(buffer));
+        // Send data to the client
+        printf("Server: ");
+        fgets(buffer, MAX_BUFFER_SIZE, stdin);
+        sendto(server_fd, buffer, strlen(buffer), 0, (struct sockaddr*)&client_addr, addr_len);
     }
-   
-    close(sd);
+
+    close(server_fd);
     return 0;
 }
