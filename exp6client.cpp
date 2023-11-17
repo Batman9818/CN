@@ -16,13 +16,8 @@ int main() {
     int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
     char hostname[MAX], ipaddress[MAX];
     struct hostent *hostIP;
-    if (gethostname(hostname, sizeof(hostname)) == 0) {
-        hostIP = gethostbyname(hostname);
-    }
-    else {
-        printf("ERROR: Failed to get IP address\n");
-        return -1;
-    }
+    gethostname(hostname, sizeof(hostname));
+    hostIP = gethostbyname(hostname);
     struct sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(PORT);
