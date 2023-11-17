@@ -7,23 +7,19 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-
 #define MAX 1000
 #define BACKLOG 5
 int main()
 {
     char serverMessage[MAX];
     char clientMessage[MAX];
-
     int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
-
     struct sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(5214);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     bind(socketDescriptor, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
     listen(socketDescriptor, BACKLOG);
-
     int clientSocketDescriptor = accept(socketDescriptor, (struct sockaddr*)NULL, (socklen_t*)NULL);
     while (1)
     {
